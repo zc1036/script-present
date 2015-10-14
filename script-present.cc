@@ -54,7 +54,7 @@ struct command {
     std::string command, wd, title, output;
     int exitcode;
     std::vector<int> lineposes;
-    decltype(COLOR_PAIR(0)) cd_color;
+    decltype(COLOR_PAIR(0)) cd_color, body_color;
 };
 
 // returns output and exit status
@@ -140,7 +140,20 @@ bool get_command(std::vector<command>& commands, std::ifstream& infile) {
             continue;
 
         if (line[0] == '#') {
-            if (line.length() > 1) {
+            if (line.length() == 1 || line[1] == ' ') {
+                do {
+                    newcmd.output.append(line.substr(1));
+                    newcmd.output.push_back('\n');
+                } while (std::getline(infile, line) && !line.empty() && line[0] == '#');
+
+                newcmd.command = "Note!";
+                newcmd.cd_color = COLOR_PAIR(4);
+                newcmd.body_color = COLOR_PAIR(7);
+                newcmd.exitcode = 0;
+                newcmd.lineposes = find_newlines(newcmd.output);
+                commands.push_back(std::move(newcmd));
+                return true;
+            } else if (line.length() > 1) {
                 if (line[1] == '!') // ignore hashbang
                     continue;
                 else if (line[1] == '#')
@@ -153,13 +166,18 @@ bool get_command(std::vector<command>& commands, std::ifstream& infile) {
         }
 
         newcmd.command = line;
-
         newcmd.cd_color = COLOR_PAIR(4);
     
         if (chdir(newcmd.wd.data()))
             newcmd.cd_color = COLOR_PAIR(6);
 
+        newcmd.body_color = COLOR_PAIR(7);
+
         std::tie(newcmd.output, newcmd.exitcode) = execute_command(newcmd.command);
+
+        if (newcmd.exitcode != 0)
+            newcmd.body_color = COLOR_PAIR(6);
+
         newcmd.lineposes = find_newlines(newcmd.output);
 
         commands.push_back(std::move(newcmd));
