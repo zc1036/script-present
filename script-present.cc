@@ -141,11 +141,15 @@ bool get_command(std::vector<command>& commands, std::ifstream& infile) {
                     newcmd.output.push_back('\n');
                 } while (std::getline(infile, line) && !line.empty() && line[0] == '#');
 
-                newcmd.command = "Note!";
+                newcmd.command = "";
                 newcmd.cd_color = COLOR_PAIR(4);
                 newcmd.body_color = COLOR_PAIR(7);
                 newcmd.exitcode = 0;
                 newcmd.lineposes = find_newlines(newcmd.output);
+
+                if (!commands.empty() && newcmd.title.empty())
+                    newcmd.title = commands.back().title;
+
                 commands.push_back(std::move(newcmd));
                 return true;
             } else if (line.length() > 1) {
@@ -164,7 +168,7 @@ bool get_command(std::vector<command>& commands, std::ifstream& infile) {
         newcmd.cd_color = COLOR_PAIR(4);
     
         if (chdir(newcmd.wd.data()))
-            newcmd.cd_color = COLOR_PAIR(6);
+            newcmd.cd_color = COLOR_PAIR(1);
 
         newcmd.body_color = COLOR_PAIR(7);
 
@@ -174,6 +178,9 @@ bool get_command(std::vector<command>& commands, std::ifstream& infile) {
             newcmd.body_color = COLOR_PAIR(1);
 
         newcmd.lineposes = find_newlines(newcmd.output);
+
+        if (!commands.empty() && newcmd.title.empty())
+            newcmd.title = commands.back().title;
 
         commands.push_back(std::move(newcmd));
 
