@@ -313,6 +313,7 @@ int main(const int argc, const char* const argv[])
             switch (ch) {
             case '\n':
             case '\r':
+            case ' ':
             case KEY_ENTER:
                 ++cmd_idx;
                 goto break_keyboard_loop;
@@ -355,8 +356,7 @@ int main(const int argc, const char* const argv[])
                 break;
             }
 
-            if (dir != IGNORE)
-                show_lines(bodywin, cmd.output, cmd.lineposes, current_line, current_line + bodyrow, dir);
+            show_lines(bodywin, cmd.output, cmd.lineposes, current_line, current_line + bodyrow, dir);
         }
 
         break_keyboard_loop:;
