@@ -263,6 +263,7 @@ int main(const int argc, const char* const argv[])
 
     signal(SIGINT, finish);
 
+    setlocale(LC_CTYPE, "");
     auto mainwin = initscr();      /* initialize the curses library */
     keypad(stdscr, TRUE);  /* enable keyboard mapping */
     nonl();         /* tell curses not to do NL->CR/NL on output */
