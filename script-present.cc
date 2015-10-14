@@ -42,11 +42,6 @@ int row, col;
 
 WINDOW *create_newwin(WINDOW* parent, int height, int width, int starty, int startx) {
 	WINDOW *local_win = subwin(parent, height, width, starty, startx);
-    box(local_win, 0 , 0);		/* 0, 0 gives default characters 
-                                 * for the vertical and horizontal
-                                 * lines			*/
-    wrefresh(local_win);		/* Show that box 		*/
-
     return local_win;
 }
 
@@ -176,7 +171,7 @@ bool get_command(std::vector<command>& commands, std::ifstream& infile) {
         std::tie(newcmd.output, newcmd.exitcode) = execute_command(newcmd.command);
 
         if (newcmd.exitcode != 0)
-            newcmd.body_color = COLOR_PAIR(6);
+            newcmd.body_color = COLOR_PAIR(1);
 
         newcmd.lineposes = find_newlines(newcmd.output);
 
@@ -227,25 +222,25 @@ void show_lines(WINDOW* bodywin, const std::string& output, const std::vector<in
 }
 
 void show_command(const command& cmd, WINDOW* titlewin, WINDOW* bodywin) {
+    int bodyrow, bodycol;
+    getmaxyx(bodywin, bodyrow, bodycol);
+
+    wclear(titlewin);
+    wattron(titlewin, cmd.body_color);
+    mvwaddnstr(titlewin, 2, 1, cmd.command.c_str(), cmd.command.length());
+    box(titlewin, 0, 0);
     wattron(titlewin, COLOR_PAIR(2));
-    mvwaddnstr(titlewin, 1, 1, cmd.title.c_str(), cmd.title.length());
+    mvwaddnstr(titlewin, 1, bodycol / 2 - cmd.title.length() / 2, cmd.title.c_str(), cmd.title.length());
 
     wattron(titlewin, cmd.cd_color);
-    mvwaddnstr(titlewin, 1, col - cmd.wd.length() - 1, cmd.wd.c_str(), cmd.wd.length());
+    mvwaddnstr(titlewin, 2, col - cmd.wd.length() - 1, cmd.wd.c_str(), cmd.wd.length());
 
     wclear(bodywin);
     wrefresh(bodywin);
     wrefresh(titlewin);
 
-    auto body_color = COLOR_PAIR(7);
+    wattron(bodywin, cmd.body_color);
 
-    if (cmd.exitcode != 0)
-        body_color = COLOR_PAIR(6);
-
-    wattron(bodywin, body_color);
-
-    int bodyrow, bodycol;
-    getmaxyx(bodywin, bodyrow, bodycol);
     show_lines(bodywin, cmd.output, cmd.lineposes, 0, bodyrow, ARBITRARY);
     wrefresh(bodywin);
 }
@@ -281,8 +276,8 @@ int main(const int argc, const char* const argv[])
 
     getmaxyx(stdscr, row, col);
 
-    auto titlewin = create_newwin(mainwin, 3, col, 0, 0),
-         bodywin = create_newwin(mainwin, row - 3, col, 3, 0);
+    auto titlewin = create_newwin(mainwin, 4, col, 0, 0),
+         bodywin = create_newwin(mainwin, row - 4, col - 1, 4, 1);
 
     int bodyrow, bodycol;
     getmaxyx(bodywin, bodyrow, bodycol);
@@ -327,8 +322,15 @@ int main(const int argc, const char* const argv[])
                 goto break_keyboard_loop;
                 break;
             case KEY_HOME:
+                dir = ARBITRARY;
+                current_line = 0;
                 break;
             case KEY_END:
+                dir = ARBITRARY;
+                if (cmd.lineposes.size() > bodyrow)
+                    current_line = cmd.lineposes.size() - bodyrow - 1;
+                else
+                    current_line = 0;
                 break;
             case KEY_UP:
                 if (current_line - 1 >= 0) {
